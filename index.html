@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宮前平脳神経外科クリニック 文書作成システム</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
+:root {
+  --navy: #0f2f6e;
+  --blue: #1b4f9e;
+  --blue-light: #e8edf8;
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --border: #d0d5dd;
+  --border-light: #e4e8ee;
+  --text: #1a1a1a;
+  --text-mid: #4a4a4a;
+  --text-light: #888;
+  --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ── header ── */
+header {
+  background: var(--navy);
+  color: white;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.header-icon {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+header h1 { font-family: 'Noto Serif JP', serif; font-size: 16px; font-weight: 600; letter-spacing: 0.04em; }
+header p  { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+.header-badge {
+  margin-left: auto;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 10px; font-weight: 700;
+}
+
+/* ── API key bar ── */
+#apiBar {
+  background: #1a3a6e;
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#apiBar label { color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 700; white-space: nowrap; }
+#apiKeyInput {
+  flex: 1; min-width: 260px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 12px; font-family: monospace;
+  outline: none;
+}
+#apiKeyInput::placeholder { color: rgba(255,255,255,0.35); }
+#apiKeyInput:focus { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.15); }
+.api-save-btn {
+  padding: 7px 16px;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 6px;
+  color: white;
+  font-size: 11px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.api-save-btn:hover { background: rgba(255,255,255,0.28); }
+#apiStatus { font-size: 11px; color: rgba(255,255,255,0.7); white-space: nowrap; }
+.api-help { font-size: 10px; color: rgba(255,255,255,0.45); }
+
+/* ── tabs ── */
+.tab-bar {
+  background: var(--navy);
+  padding: 0 28px;
+  display: flex;
+  gap: 4px;
+  border-bottom: 3px solid var(--blue);
+}
+.tab-btn {
+  padding: 10px 22px;
+  background: rgba(255,255,255,0.08);
+  border: none; border-radius: 8px 8px 0 0;
+  color: rgba(255,255,255,0.55);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.03em;
+  transition: all 0.2s;
+}
+.tab-btn:hover { background: rgba(255,255,255,0.15); color: white; }
+.tab-btn.active { background: white; color: var(--navy); }
+
+/* ── main layout ── */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 800px) {
+  .main { grid-template-columns: 1fr; }
+  header { padding: 14px 16px; }
+  .tab-bar { padding: 0 16px; }
+  #apiBar { padding: 10px 16px; }
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: contents; }
+
+/* ── panel ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.panel-header {
+  background: #fafafa;
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 18px;
+  display: flex; align-items: center; gap: 9px;
+}
+.panel-header .num {
+  background: var(--blue);
+  color: white;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+.panel-header h2 { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+.panel-body { padding: 18px; }
+
+/* ── fields ── */
+.field-group { margin-bottom: 13px; }
+.field-group:last-child { margin-bottom: 0; }
+.field-label {
+  display: block;
+  font-size: 10px; font-weight: 700;
+  color: var(--text-mid);
+  margin-bottom: 4px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+input[type="text"], input[type="date"], input[type="password"], textarea, select {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px; color: var(--text);
+  background: #fafafa;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+input:focus, textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(27,79,158,0.1);
+  background: white;
+}
+textarea { resize: vertical; line-height: 1.65; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── style toggle ── */
+.style-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.style-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 8px;
+  border: 2px solid var(--border);
+  border-radius: 7px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: 'Noto Sans JP', sans-serif;
+  text-align: center;
+}
+.style-btn:hover { border-color: var(--blue); background: var(--blue-light); }
+.style-btn.active { border-color: var(--blue); background: var(--blue-light); box-shadow: 0 0 0 3px rgba(27,79,158,0.1); }
+.style-icon { font-size: 16px; }
+.style-label { font-size: 12px; font-weight: 700; color: var(--text); }
+.style-btn.active .style-label { color: var(--navy); }
+.style-desc { font-size: 10px; color: var(--text-light); line-height: 1.3; }
+.style-btn.active .style-desc { color: var(--blue); }
+
+/* ── generate btn ── */
+.generate-btn {
+  width: 100%; margin-top: 6px;
+  background: var(--blue);
+  color: white; border: none;
+  border-radius: 7px; padding: 13px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.06em;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.generate-btn:hover { background: var(--navy); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.generate-btn:active { transform: translateY(0); }
+.generate-btn:disabled { background: #aaa; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── result ── */
+.result-area {
+  min-height: 260px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 13px; line-height: 2.0;
+  white-space: pre-wrap;
+  padding: 22px;
+  background: #fafafa;
+  border-radius: 7px;
+  color: var(--text);
+  border: 1px solid var(--border-light);
+}
+.placeholder-msg {
+  color: var(--text-light);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px; text-align: center;
+  padding: 50px 20px; line-height: 1.8;
+}
+.placeholder-msg .icon { font-size: 32px; margin-bottom: 10px; }
+.result-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn-print {
+  padding: 8px 16px;
+  border: 1px solid var(--blue); border-radius: 6px;
+  background: var(--blue-light);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  transition: all 0.15s; color: var(--navy);
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-print:hover { background: var(--blue); color: white; }
+.btn-secondary {
+  padding: 8px 16px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: white;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; color: var(--text);
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-secondary:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ── loading / spinner ── */
+.loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 50px 20px; color: var(--text-mid); font-size: 12px;
+}
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.info-bar {
+  background: #eef2fb; border: 1px solid #c5d3ef;
+  border-radius: 7px; padding: 9px 13px;
+  font-size: 11px; color: var(--navy);
+  margin-bottom: 14px;
+  display: flex; gap: 6px; align-items: flex-start; line-height: 1.5;
+}
+
+.style-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 20px;
+  font-size: 10px; font-weight: 700; margin-left: 8px;
+}
+.badge-compact { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+.badge-formal  { background: var(--blue-light); color: var(--navy); border: 1px solid #c5d3ef; }
+
+.streaming-cursor::after {
+  content: '▋'; animation: blink 0.8s step-end infinite; color: var(--blue);
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.divider { border: none; border-top: 1px solid var(--border-light); margin: 14px 0; }
+
+@media print {
+  header, #apiBar, .tab-bar, .panel:first-child, .result-actions, .generate-btn { display: none !important; }
+  .main { display: block; padding: 0; max-width: 100%; }
+  .panel { border: none; box-shadow: none; }
+  .result-area { border: none; padding: 0; font-size: 11pt; min-height: unset; }
+  body { background: white; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🧠</div>
+  <div>
+    <h1>宮前平脳神経外科クリニック　文書作成システム</h1>
+    <p>カルテ全文をコピー＆ペーストして紹介状・返書を自動生成</p>
+  </div>
+  <div class="header-badge">⚕️ 院内利用専用</div>
+</header>
+
+<!-- API Key Bar -->
+<div id="apiBar">
+  <label for="apiKeyInput">🔑 Anthropic APIキー</label>
+  <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" />
+  <button class="api-save-btn" onclick="saveApiKey()">保存</button>
+  <span id="apiStatus"></span>
+  <span class="api-help">※ 入力したキーはこの端末のブラウザにのみ保存されます</span>
+</div>
+
+<!-- Tabs -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-btn-shoukai" onclick="switchTab('shoukai')">📋 診療情報提供書</button>
+  <button class="tab-btn" id="tab-btn-reply" onclick="switchTab('reply')">📨 紹介御礼状（返書）</button>
+</div>
+
+<!-- ===== 診療情報提供書 ===== -->
+<div class="main tab-content active" id="tab-shoukai">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="num">1</div>
+      <h2>カルテ全文を貼り付け</h2>
+    </div>
+    <div class="panel-body">
+      <div class="info-bar">🔒 入力内容はブラウザ内のみで処理。患者氏名等は必要に応じ匿名化してください。</div>
+      <div class="row2">
+        <div class="field-group">
+          <label class="field-label">作成日</label>
+          <input type="date" id="s-date" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">患者（任意）</label>
+          <input type="text" id="s-patient" placeholder="例：山田 太郎 様" />
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field-group">
+          <label class="field-label">紹介先医療機関</label>
+          <input type="text" id="s-toHospital" placeholder="例：横浜新都市脳神経外科病院" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">紹介先医師名</label>
+          <input type="text" id="s-toDoctor" placeholder="例：ご担当医" />
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">紹介目的（任意）</label>
+        <input type="text" id="s-purpose" placeholder="例：脳血流評価含めご高診の程" />
+      </div>
+      <hr class="divider">
+      <div class="field-group">
+        <label class="field-label">カルテ全文</label>
+        <textarea id="s-karte" rows="14" placeholder="m3デジカルのカルテ内容をそのまま全文コピー＆ペーストしてください。&#10;&#10;主訴・現病歴・検査所見・処方・方針など、すべての情報を貼り付けるだけでAIが整理して本文を作成します。"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">追加指示（任意）</label>
+        <textarea id="s-note" rows="2" placeholder="例：緊急性あり、手術適応の判断をお願いしたい など"></textarea>
+      </div>
+      <button class="generate-btn" id="s-btn" onclick="generateShoukai()">
+        <span>✦</span><span>診療情報提供書を作成する</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="num">2</div>
+      <h2>生成された本文</h2>
+    </div>
+    <div class="panel-body">
+      <div class="result-area" id="s-result">
+        <div class="placeholder-msg"><div class="icon">📋</div><div>カルテ全文を貼り付けて<br>ボタンを押してください</div></div>
+      </div>
+      <div class="result-actions" id="s-actions" style="display:none">
+        <button class="btn-print" onclick="window.print()">🖨️ 印刷</button>
+        <button class="btn-secondary" onclick="copyResult('s-result',this)">📋 コピー</button>
+        <button class="btn-secondary" onclick="clearForm('s')">🔄 リセット</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 返書 ===== -->
+<div class="main tab-content" id="tab-reply">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="num">1</div>
+      <h2>カルテ全文を貼り付け</h2>
+    </div>
+    <div class="panel-body">
+      <div class="info-bar">🔒 入力内容はブラウザ内のみで処理。患者氏名等は必要に応じ匿名化してください。</div>
+      <div class="row2">
+        <div class="field-group">
+          <label class="field-label">作成日</label>
+          <input type="date" id="r-date" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">患者（任意）</label>
+          <input type="text" id="r-patient" placeholder="例：山田 太郎 様" />
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field-group">
+          <label class="field-label">紹介元医療機関</label>
+          <input type="text" id="r-fromHospital" placeholder="例：とくえ内科クリニック" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">紹介元医師名</label>
+          <input type="text" id="r-fromDoctor" placeholder="例：徳江政英" />
+        </div>
+      </div>
+      <hr class="divider">
+      <div class="field-group">
+        <label class="field-label">カルテ全文</label>
+        <textarea id="r-karte" rows="12" placeholder="m3デジカルのカルテ内容をそのまま全文コピー＆ペーストしてください。"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">返書スタイル</label>
+        <div class="style-toggle">
+          <button class="style-btn active" id="r-btnCompact" onclick="setReplyStyle('compact')">
+            <span class="style-icon">⚡</span>
+            <span class="style-label">簡潔版</span>
+            <span class="style-desc">2〜3文・拝復〜敬具のみ</span>
+          </button>
+          <button class="style-btn" id="r-btnFormal" onclick="setReplyStyle('formal')">
+            <span class="style-icon">📋</span>
+            <span class="style-label">標準版</span>
+            <span class="style-desc">4〜5文・丁寧に記載</span>
+          </button>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">追加指示（任意）</label>
+        <textarea id="r-note" rows="2" placeholder="例：手術予定あり など"></textarea>
+      </div>
+      <button class="generate-btn" id="r-btn" onclick="generateReply()">
+        <span>✦</span><span>返書を作成する</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="num">2</div>
+      <h2>生成された返書</h2>
+      <span class="style-badge badge-compact" id="r-styleBadge">⚡ 簡潔版</span>
+    </div>
+    <div class="panel-body">
+      <div class="result-area" id="r-result">
+        <div class="placeholder-msg"><div class="icon">📨</div><div>カルテ全文を貼り付けて<br>ボタンを押してください</div></div>
+      </div>
+      <div class="result-actions" id="r-actions" style="display:none">
+        <button class="btn-print" onclick="window.print()">🖨️ 印刷</button>
+        <button class="btn-secondary" onclick="copyResult('r-result',this)">📋 コピー</button>
+        <button class="btn-secondary" onclick="clearForm('r')">🔄 リセット</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CLINIC = `宮前平脳神経外科クリニック
+神奈川県川崎市宮前区小台2-5-1 ティモネ宮前平101
+TEL 044-872-8027
+医師　上野 龍`;
+
+const SHOUKAI_EXAMPLES = `【手本①：脳梗塞・施設入所】
+症状経過及び検査結果
+平素より大変お世話になっております。施設入所中の方で、もともと歩行は可能であったとのことです。2026年4月23日6：30頃に起床してから右に体が傾くようになり、歩行ができなくなったとのことで同日当院受診されております。来院時はJCS3・自発的な発語なし、Barreサインでは左右差ははっきりしませんでした。頭部MRI/A撮像したところ、左前頭葉に新規梗塞巣を認めました。ご多忙のところ誠に恐縮ではございますが、ご高診いただけますと幸いに存じます。
+
+【手本②：TIA・既往なし・MRA狭窄】
+症状経過及び検査結果
+平素より大変お世話になっております。特に既往のない方です。2〜3か月前と、2026年5月25日にPC作業をしている際に、30分ほど持続する左上肢の脱力を自覚され、当院受診されました。来院時は明らかな神経脱落所見は認めませんでした。頭部MRI/A撮像したところ、右M1の描出が不良となっておりました。ご多忙のところ誠に恐縮ではございますが、脳血流評価含めご高診の程よろしくお願い申し上げます。
+
+【手本③：Bell麻痺・他院経由】
+症状経過及び検査結果
+平素より大変お世話になっております。昨日より左眼瞼の下垂を自覚され、本日眼科を受診。眼科で左口角の下垂を指摘され、当院受診を勧められ来院されました。来院時は意識レベル清明、左眼瞼下垂ははっきりしませんが、左口角下垂を軽度認め、House&Brackmann II相当と考えます。頭部MRIでは頭蓋内に明らかな器質性病変を認めず、左Bell麻痺と考え、下記処方としております。ご多忙のところ誠に恐縮ではございますが、ご高診いただけますと幸いに存じます。`;
+
+// ── API key ──
+function loadApiKey() {
+  const key = localStorage.getItem('anthropic_api_key') || '';
+  document.getElementById('apiKeyInput').value = key;
+  updateApiStatus(key);
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { alert('APIキーを入力してください。'); return; }
+  if (!key.startsWith('sk-ant-')) { alert('APIキーは sk-ant- で始まる文字列です。ご確認ください。'); return; }
+  localStorage.setItem('anthropic_api_key', key);
+  updateApiStatus(key);
+  const s = document.getElementById('apiStatus');
+  s.textContent = '✅ 保存しました';
+  setTimeout(() => updateApiStatus(key), 2000);
+}
+
+function updateApiStatus(key) {
+  const s = document.getElementById('apiStatus');
+  s.textContent = key.startsWith('sk-ant-') ? '🔓 設定済み' : '⚠️ 未設定';
+  s.style.color = key.startsWith('sk-ant-') ? '#86efac' : '#fca5a5';
+}
+
+function getApiKey() {
+  return localStorage.getItem('anthropic_api_key') || '';
+}
+
+// ── tab ──
+function switchTab(tab) {
+  ['shoukai','reply'].forEach(t => {
+    document.getElementById('tab-btn-' + t).classList.toggle('active', t === tab);
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+}
+
+// ── date init ──
+window.addEventListener('DOMContentLoaded', () => {
+  loadApiKey();
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('s-date').value = today;
+  document.getElementById('r-date').value = today;
+});
+
+// ── style toggle ──
+let replyStyle = 'compact';
+function setReplyStyle(s) {
+  replyStyle = s;
+  document.getElementById('r-btnCompact').classList.toggle('active', s === 'compact');
+  document.getElementById('r-btnFormal').classList.toggle('active', s === 'formal');
+  const badge = document.getElementById('r-styleBadge');
+  badge.textContent = s === 'compact' ? '⚡ 簡潔版' : '📋 標準版';
+  badge.className = 'style-badge ' + (s === 'compact' ? 'badge-compact' : 'badge-formal');
+}
+
+// ── format date ──
+function fmtDate(val) {
+  const dt = val ? new Date(val) : new Date();
+  return dt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+// ── streaming ──
+async function streamToArea(prompt, areaId, btnId, actionsId) {
+  const apiKey = getApiKey();
+  if (!apiKey.startsWith('sk-ant-')) {
+    alert('APIキーが設定されていません。\n画面上部にAPIキーを入力して「保存」を押してください。');
+    return;
+  }
+
+  const area = document.getElementById(areaId);
+  const btn  = document.getElementById(btnId);
+  const acts = document.getElementById(actionsId);
+  const origLabel = btn.innerHTML;
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div><span>生成中...</span>';
+  acts.style.display = 'none';
+  area.innerHTML = '<div class="loading"><div class="spinner"></div><span>AIが文書を作成しています...</span></div>';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        stream: true,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err.error?.message) || 'APIエラー: ' + res.status);
+    }
+
+    area.innerHTML = '';
+    let fullText = '';
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of decoder.decode(value).split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const d = line.slice(6);
+        if (d === '[DONE]') continue;
+        try {
+          const p = JSON.parse(d);
+          if (p.type === 'content_block_delta' && p.delta?.text) {
+            fullText += p.delta.text;
+            area.textContent = fullText;
+            area.className = 'result-area streaming-cursor';
+          }
+        } catch(_) {}
+      }
+    }
+    area.className = 'result-area';
+    acts.style.display = 'flex';
+
+  } catch(e) {
+    area.innerHTML = `<div style="color:#c0392b;padding:16px">
+      <strong>⚠️ エラーが発生しました</strong><br>
+      <span style="font-size:11px;color:#666">${e.message}</span>
+    </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origLabel;
+  }
+}
+
+// ── 診療情報提供書 ──
+function generateShoukai() {
+  const karte = document.getElementById('s-karte').value.trim();
+  if (!karte) { alert('カルテ全文を貼り付けてください。'); return; }
+
+  const date      = fmtDate(document.getElementById('s-date').value);
+  const patient   = document.getElementById('s-patient').value   || '患者';
+  const toHospital= document.getElementById('s-toHospital').value|| '○○病院';
+  const toDoctor  = document.getElementById('s-toDoctor').value;
+  const purpose   = document.getElementById('s-purpose').value   || 'ご高診の程よろしくお願い申し上げます';
+  const note      = document.getElementById('s-note').value;
+
+  const prompt = `あなたは脳神経外科専門医です。以下のカルテ全文から「診療情報提供書の本文（症状経過及び検査結果の欄）」を作成してください。
+
+【基本情報】
+作成日：${date}
+患者：${patient}
+紹介先：${toHospital}${toDoctor ? '　' + toDoctor + ' 先生' : ''}
+紹介目的：${purpose}
+${note ? '追加指示：' + note : ''}
+
+【カルテ全文】
+${karte}
+
+【厳守事項】
+- 全体を1段落・4〜6文以内に収める
+- 1文に1情報のみ。修飾・補足の重複は一切入れない
+- 書き出し：「平素より大変お世話になっております。」固定
+- 既往歴：なしの場合「特に既往のない方です。」、ありの場合は既往を1文で簡潔に
+- 受診経緯：他院経由の場合はその流れも1文で自然につなぐ
+- 発症：複数回ある場合も「〇か月前と、${date}に〜」と自然につなぐ
+- 所見：神経学的所見・グレード評価（H&B等）があれば1文で記載
+- 検査：主要所見のみ1文。異常なしは「〜を認めず」、MRA所見は「描出が不良」など臨床的表現で
+- 処方：「下記処方としております」の一言のみ。薬剤名の列挙は不要
+- 締め文：「ご多忙のところ誠に恐縮ではございますが、ご高診いただけますと幸いに存じます。」固定。追加指示がある場合は「〇〇含め」と締め文の前に挿入
+- 処方薬の詳細は本文に含めない
+- 箇条書き・見出し・マークダウン（**・##）は一切使わない
+
+【出力】「症状経過及び検査結果」の見出しから本文のみ出力。
+
+${SHOUKAI_EXAMPLES}`;
+
+  streamToArea(prompt, 's-result', 's-btn', 's-actions');
+}
+
+// ── 返書 ──
+function generateReply() {
+  const karte = document.getElementById('r-karte').value.trim();
+  if (!karte) { alert('カルテ全文を貼り付けてください。'); return; }
+
+  const date        = fmtDate(document.getElementById('r-date').value);
+  const patient     = document.getElementById('r-patient').value    || '患者';
+  const fromHospital= document.getElementById('r-fromHospital').value|| '紹介元医療機関';
+  const fromDoctor  = document.getElementById('r-fromDoctor').value;
+  const note        = document.getElementById('r-note').value;
+
+  const styleInst = replyStyle === 'compact'
+    ? '【本文の長さ】簡潔版：2〜3文以内。診断名・主要検査結果・方針のみ。修飾語・重複なし。'
+    : '【本文の長さ】標準版：4〜5文以内。発症経緯→所見→検査→診断・治療・方針の順で各1文。';
+
+  const prompt = `あなたは脳神経外科専門医です。以下のカルテ全文から紹介元への「紹介御礼状（返書）」を作成してください。
+
+【基本情報】
+作成日：${date}
+患者：${patient}
+紹介元：${fromHospital}${fromDoctor ? '　' + fromDoctor + ' 先生' : ''}
+当院：${CLINIC}
+${note ? '追加指示：' + note : ''}
+
+【カルテ全文】
+${karte}
+
+${styleInst}
+
+【厳守事項】
+- 処方薬の列挙は本文に含めない
+- 1文に1情報のみ。補足・修飾の重複なし
+- 箇条書き・見出し・マークダウン（**・##）は一切使わない
+- 固有名詞はカルテからそのまま使う
+
+【出力フォーマット（この構造のまま出力）】
+拝復　${fromDoctor ? fromDoctor + ' 先生　' : ''}${patient}をご紹介頂きまして有難うございました。
+${date}当院に受診されました。
+（本文：上記スタイル指定の文数で）
+来院されましたのでご報告申し上げ御厚情を厚くお礼申し上げます。
+敬具
+
+　診断名　[診断名]
+
+　${date}
+${CLINIC}`;
+
+  streamToArea(prompt, 'r-result', 'r-btn', 'r-actions');
+}
+
+// ── utils ──
+function copyResult(areaId, btn) {
+  const text = document.getElementById(areaId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ コピーしました';
+    setTimeout(() => btn.innerHTML = orig, 2000);
+  });
+}
+
+function clearForm(prefix) {
+  if (!confirm('入力内容をリセットしますか？')) return;
+  const ids = prefix === 's'
+    ? ['s-patient','s-toHospital','s-toDoctor','s-purpose','s-note','s-karte']
+    : ['r-patient','r-fromHospital','r-fromDoctor','r-note','r-karte'];
+  ids.forEach(id => document.getElementById(id).value = '');
+  document.getElementById(prefix + '-date').value = new Date().toISOString().split('T')[0];
+  const placeholder = prefix === 's'
+    ? '<div class="placeholder-msg"><div class="icon">📋</div><div>カルテ全文を貼り付けて<br>ボタンを押してください</div></div>'
+    : '<div class="placeholder-msg"><div class="icon">📨</div><div>カルテ全文を貼り付けて<br>ボタンを押してください</div></div>';
+  document.getElementById(prefix + '-result').innerHTML = placeholder;
+  document.getElementById(prefix + '-result').className = 'result-area';
+  document.getElementById(prefix + '-actions').style.display = 'none';
+}
+</script>
+</body>
+</html>
